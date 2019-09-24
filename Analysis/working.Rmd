@@ -1,0 +1,18 @@
+This is an attempt to further analyze the RNA sequencing data of Pax3 lineage from front limb of E11 and E14 mice with the focus on genes related to metabolism and also transcription factors. 
+
+
+Read in the raw data
+
+```{r}
+setwd("~/Desktop/E14E11/E14E11/Data")
+raw_data = read.csv("embryonic.rna.seq.count.txt",
+                    stringsAsFactors = FALSE,
+                    sep = "\t",
+                    row.names = 1)
+head(raw_data)
+```
+
+```{r}
+data = raw_data[, c(1:5, 21:25)]
+head(data)
+```
