@@ -4,7 +4,7 @@ This is an attempt to further analyze the RNA sequencing data of Pax3 lineage fr
 Read in the raw data
 
 ```{r}
-setwd("~/Desktop/E14E11/E14E11/Data")
+setwd("C:/Users/trant/Desktop/E14E11/E14E11/Data")
 raw_data = read.csv("embryonic.rna.seq.count.txt",
                     stringsAsFactors = FALSE,
                     sep = "\t",
@@ -16,3 +16,80 @@ head(raw_data)
 data = raw_data[, c(1:5, 21:25)]
 head(data)
 ```
+
+```{r}
+library(DESeq2)
+library(pheatmap)
+```
+
+```{r}
+stage = c(rep("E11", 5), rep("E14", 5))
+meta_data = data.frame(stage)
+row.names(meta_data) = colnames(data)
+meta_data
+```
+Create DESeq2 object
+```{r}
+dds = DESeqDataSetFromMatrix(countData = data,
+                             colData = meta_data,
+                             design = ~stage)
+```
+
+Unsupervised clustering analyses
+
+```{r}
+vsd = vst(dds, blind = TRUE)
+vsd_mat = assay(vsd)
+vsd_cor = cor(vsd_mat)
+pheatmap(vsd_cor)
+```
+
+PCA plot
+
+```{r}
+plotPCA(vsd, intgroup = "stage")
+```
+
+Filter out low count genes
+
+```{r}
+dds = dds[rowSums(counts(dds))>10,]
+```
+
+Calculate differential expression and shrink the log fold change
+
+```{r}
+dde = DESeq(dds)
+res = results(dde, contrast = c("stage", "E14", "E11"))
+res = lfcShrink(dde, contrast = c("stage", "E14", "E11"), res = res)
+```
+
+extract the data and subset for differentially expressed genes
+
+```{r}
+res.all = data.frame(res)
+res.sig = subset(res.all, padj < 0.05)
+```
+
+Create the heatmap of the differentially expressed genes
+
+First, extract the read count matrix of the differentially expressed genes
+
+normalized counts: calculation
+```{r}
+dds = estimateSizeFactors(dds)
+normalized_counts = counts(dds, normalized = TRUE)
+```
+
+
+```{r}
+DEgenes = as.data.frame(normalized_counts[row.names(res.sig),])
+```
+
+```{r}
+pheatmap(DEgenes,
+         cluster_rows = T,
+         show_rownames = F,
+         scale = "row")
+```
+
